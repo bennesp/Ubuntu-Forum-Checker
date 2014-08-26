@@ -4,11 +4,12 @@ import time
 import threading
 import pickle
 import webbrowser
+import subprocess
 
 class UbuntuForumChecker:
   def __init__(self):
     self.icon = gtk.StatusIcon()
-    self.icon.set_from_stock(gtk.STOCK_REFRESH)
+    self.icon.set_from_file("data/images/refresh.png")
     self.icon.set_tooltip("Authenticating...")
     self.icon.set_visible(True)
    
@@ -112,13 +113,21 @@ class UbuntuForumChecker:
 
   def click_topic(self, widget):
     webbrowser.open(widget.get_label())
+    self.submenus.remove(widget.get_label())
     self.menu.remove(widget)
+    if len(self.menu.get_children())==1:
+      self.icon.set_from_file("data/images/ok.png")
 
   def update_topics(self, topics):
     #self.log("In update_topics")
     for topic in topics[-5:]:
       if(self.p.retTopic(topic) in self.submenus):
         continue
+      try:
+        subprocess.call(["mplayer", "data/sounds/notif.mp3"])
+      except OSError: 
+        # mplayer not installed. You'll not hear sounds.
+        pass
       mi = gtk.MenuItem(self.p.retTopic(topic))
       mi.connect("activate", self.click_topic)
       self.submenus.append(self.p.retTopic(topic))
@@ -133,7 +142,7 @@ class UbuntuForumChecker:
         time.sleep(.1)
       r=0
       try:
-        gobject.idle_add(self.icon.set_from_stock, gtk.STOCK_GO_DOWN)
+        gobject.idle_add(self.icon.set_from_file, "data/images/refresh.png")
         list_topic=self.p.getOwnTopics(100)
       except AttributeError, ex:
         self.log("Exception: "+str(ex))
@@ -149,13 +158,13 @@ class UbuntuForumChecker:
           unread_topics.append(topic)
       if r>0:
         self.log("There is/are "+str(r)+" thread/s to be read")
-        gobject.idle_add(self.icon.set_from_stock, gtk.STOCK_NO)
+        gobject.idle_add(self.icon.set_from_file, "data/images/new.png")
         if r==1: gobject.idle_add(self.icon.set_tooltip, "There is a thread to be read")
         else: gobject.idle_add(self.icon.set_tooltip, "There are " + r + " threads to be read")
         gobject.idle_add(self.update_topics, unread_topics)
       else:
         self.log("All threads read")
-        gobject.idle_add(self.icon.set_from_stock, gtk.STOCK_OK)
+        gobject.idle_add(self.icon.set_from_file, "data/images/ok.png")
         gobject.idle_add(self.icon.set_tooltip, "All threads read")
       time.sleep(60)
 
